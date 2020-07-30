@@ -60,6 +60,37 @@ impl Uuid {
         self.data
     }
 
+    #[cfg(feature = "osrng")]
+    #[inline]
+    ///Generates UUID `v4` using OS RNG from [getrandom](https://crates.io/crates/getrandom)
+    ///
+    ///Only available when `osrng` feature is enabled.
+    pub fn osrng() -> Self {
+        #[cold]
+        fn random_unavailable(error: getrandom::Error) -> ! {
+            panic!("OS RNG is not available for use: {}", error)
+        }
+
+        let mut bytes = [0; 16];
+        if let Err(error) = getrandom::getrandom(&mut bytes[..]) {
+            random_unavailable(error)
+        }
+
+        Self::from_bytes(bytes).set_variant().set_version(Version::Random)
+    }
+
+    #[cfg(feature = "prng")]
+    #[inline]
+    ///Generates UUID `v4` using PRNG from [wyhash](https://crates.io/crates/wy)
+    ///
+    ///Only available when `prng` feature is enabled.
+    pub fn prng() -> Self {
+        static RANDOM: wy::AtomicRandom = wy::AtomicRandom::new(9);
+        let right = u128::from(RANDOM.gen());
+        let left = u128::from(RANDOM.gen());
+        Self::from_bytes(((left << 64) |  right).to_ne_bytes()).set_variant().set_version(Version::Random)
+    }
+
     #[inline]
     ///Adds variant byte to the corresponding field.
     ///

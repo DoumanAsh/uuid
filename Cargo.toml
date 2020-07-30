@@ -17,3 +17,11 @@ include = [
 
 [dependencies]
 str-buf = "1.0.2"
+wy = { version = "1", optional = true }
+getrandom = { version = "0.1", optional = true }
+
+[features]
+# Enables v4 with pseudo RNG
+prng = ["wy"]
+# Enables v4 with OS RNG
+osrng = ["getrandom"]
