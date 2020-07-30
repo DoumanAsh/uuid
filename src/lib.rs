@@ -60,6 +60,12 @@ impl Uuid {
         self.data
     }
 
+    #[inline]
+    ///Checks if `UUID` version is equal to the provided `version`
+    pub const fn is_version(&self, version: Version) -> bool {
+        (self.data[6] >> 4) == version as u8
+    }
+
     #[cfg(feature = "osrng")]
     #[inline]
     ///Generates UUID `v4` using OS RNG from [getrandom](https://crates.io/crates/getrandom)
@@ -84,6 +90,13 @@ impl Uuid {
     ///Generates UUID `v4` using PRNG from [wyhash](https://crates.io/crates/wy)
     ///
     ///Only available when `prng` feature is enabled.
+    ///
+    ///This random variant generates predictable UUID, even though they are unique.
+    ///Which means that each time program starts, it is initialized with the same seed and
+    ///therefore would repeat UUIDs
+    ///
+    ///This random is useful when you want to generate predictable but random UUIDs
+    ///Otherwise it is not different from using `osrng`
     pub fn prng() -> Self {
         static RANDOM: wy::AtomicRandom = wy::AtomicRandom::new(9);
         let right = u128::from(RANDOM.gen());

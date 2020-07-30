@@ -15,3 +15,24 @@ fn should_convert_uuid_to_str() {
     assert_eq!(uuid.to_string(), "feff6401-00ff-4ffd-a814-967d828cc863");
 }
 
+#[cfg(feature = "prng")]
+#[test]
+fn check_random_uuid4_prng() {
+    let uuid = Uuid::prng();
+    assert!(uuid.is_version(lolid::Version::Random));
+    assert!(!uuid.is_version(lolid::Version::Sha1));
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_ne!(uuid, Uuid::prng().to_string());
+}
+
+#[cfg(feature = "osrng")]
+#[test]
+fn check_random_uuid4_osrng() {
+    let uuid = Uuid::osrng();
+    assert!(uuid.is_version(lolid::Version::Random));
+    assert!(!uuid.is_version(lolid::Version::Sha1));
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_ne!(uuid, Uuid::osrng().to_string());
+}
