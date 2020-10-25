@@ -2,9 +2,10 @@
 //!
 //!## Features:
 //!
-//!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs.
-//!- `orng` - Enables v4 using OS random, allowing unique UUIDs.
-//!- `sha1` - Enables v5.
+//!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
+//!- `orng` - Enables v4 using OS random, allowing unique UUIDs;
+//!- `sha1` - Enables v5;
+//!- `os_v1` - Enables v1 implementation using OS's API. Available platforms: Windows, Linux;
 
 #![no_std]
 #![warn(missing_docs)]
@@ -96,6 +97,45 @@ impl Uuid {
     ///Checks if `UUID` variant is set, it only cares about RFC4122 byte
     pub const fn is_variant(&self) -> bool {
         (self.data[8] & 0xc0) == 0x80
+    }
+
+    #[cfg(feature = "os_v1")]
+    ///Generates UUID using OS's API
+    pub fn os_v1() -> Self {
+        let mut uuid = core::mem::MaybeUninit::uninit();
+
+        #[cfg(windows)]
+        {
+            #[link(name = "Rpcrt4")]
+            extern "system" {
+                fn UuidCreateSequential(uuid: *mut [u8; 16]) -> i32;
+            }
+
+            unsafe {
+                assert_eq!(UuidCreateSequential(uuid.as_mut_ptr()), 0)
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            #[link(name = "uuid")]
+            extern "C" {
+                fn uuid_generate_time(uuid: *mut [u8; 16]);
+            }
+
+            unsafe {
+                uuid_generate_time(uuid.as_mut_ptr());
+            }
+        }
+
+        #[cfg(all(not(windows), not(target_os = "linux")))]
+        {
+            compile_error!("os_v1 is unsupported for the target");
+        }
+
+        Self::from_bytes(unsafe {
+            uuid.assume_init()
+        }).set_variant().set_version(Version::Mac)
     }
 
     #[cfg(feature = "osrng")]

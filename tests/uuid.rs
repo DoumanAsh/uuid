@@ -17,6 +17,17 @@ fn should_convert_uuid_to_str() {
     assert_eq!(uuid.to_string(), "feff6401-00ff-4ffd-a814-967d828cc863");
 }
 
+#[cfg(feature = "os_v1")]
+#[test]
+fn check_random_os_v1() {
+    let uuid = Uuid::os_v1();
+    assert!(!uuid.is_version(lolid::Version::Random));
+    assert!(uuid.is_version(lolid::Version::Mac));
+
+    let uuid2 = Uuid::os_v1();
+    assert_ne!(uuid.to_string().as_str(), uuid2.to_string().as_str());
+}
+
 #[cfg(feature = "prng")]
 #[test]
 fn check_random_uuid4_prng() {
