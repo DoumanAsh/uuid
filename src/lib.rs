@@ -1,6 +1,6 @@
-//!Simple `no_std` UUID generator.
+//!Minimal`no_std` UUID implementation.
 //!
-//!Features:
+//!## Features:
 //!
 //!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs.
 //!- `orng` - Enables v4 using OS random, allowing unique UUIDs.
@@ -249,9 +249,8 @@ pub enum ParseError {
     ///Group has invalid len.
     ///
     ///1. Group number;
-    ///2. Expected len;
     ///3. Actual len;
-    InvalidGroupLen(usize, usize, usize),
+    InvalidGroupLen(u8, usize),
     ///Invalid character is encountered.
     ///
     ///1. Character byte;
@@ -264,7 +263,7 @@ impl fmt::Display for ParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseError::InvalidLength(len) => fmt.write_fmt(format_args!("Invalid length {}", len)),
-            ParseError::InvalidGroupLen(idx, expected, len) => fmt.write_fmt(format_args!("Group {} has length {}, expected {}", idx, expected, len)),
+            ParseError::InvalidGroupLen(idx, len) => fmt.write_fmt(format_args!("Group {} has unexpected length {}", idx, len)),
             ParseError::InvalidByte(byte, pos) => fmt.write_fmt(format_args!("Invalid character '{:x}' at position {}", byte, pos)),
         }
     }
@@ -285,27 +284,27 @@ impl core::str::FromStr for Uuid {
             //But after that we always fail if group len is invalid
             let time_low = input.next().unwrap();
             if time_low.len() != 8 {
-                return Err(ParseError::InvalidGroupLen(1, 8, time_low.len()));
+                return Err(ParseError::InvalidGroupLen(1, time_low.len()));
             }
 
             let time_mid = input.next().unwrap();
             if time_mid.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(2, 4, time_mid.len()));
+                return Err(ParseError::InvalidGroupLen(2, time_mid.len()));
             }
 
             let time_hi_version = input.next().unwrap();
             if time_hi_version.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(3, 4, time_hi_version.len()));
+                return Err(ParseError::InvalidGroupLen(3, time_hi_version.len()));
             }
 
             let clock_seq = input.next().unwrap();
             if clock_seq.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(4, 4, clock_seq.len()));
+                return Err(ParseError::InvalidGroupLen(4, clock_seq.len()));
             }
 
             let node = input.next().unwrap();
             if node.len() != 12 {
-                return Err(ParseError::InvalidGroupLen(5, 12, node.len()));
+                return Err(ParseError::InvalidGroupLen(5, node.len()));
             }
 
             let mut chunks = [
@@ -376,7 +375,7 @@ impl core::str::FromStr for Uuid {
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
+    use crate::byte_to_hex;
 
     #[test]
     fn should_convert_byte_to_hex() {

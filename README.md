@@ -4,4 +4,10 @@
 [![Crates.io](https://img.shields.io/crates/v/lolid.svg)](https://crates.io/crates/lolid)
 [![Documentation](https://docs.rs/lolid/badge.svg)](https://docs.rs/crate/lolid/)
 
-Simple `UUID` implementation for Rust
+Minimal`no_std` UUID implementation.
+
+## Features:
+
+- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs.
+- `orng` - Enables v4 using OS random, allowing unique UUIDs.
+- `sha1` - Enables v5.
