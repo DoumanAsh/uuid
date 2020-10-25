@@ -24,6 +24,25 @@ const fn byte_to_hex(byt: u8, idx: usize) -> u8 {
     HEX_DIGITS[((byt as usize) >> (BASE * idx)) & BASE_DIGIT]
 }
 
+#[inline]
+fn hex_to_byte(hex: &[u8], cursor: usize, error_offset: usize) -> Result<u8, ParseError> {
+    let left = match hex[cursor] {
+        chr @ b'0'..=b'9' => chr - b'0',
+        chr @ b'a'..=b'f' => chr - b'a' + 10,
+        chr @ b'A'..=b'F' => chr - b'A' + 10,
+        chr => return Err(ParseError::InvalidByte(chr, cursor + error_offset)),
+    };
+
+    let right = match hex[cursor + 1] {
+        chr @ b'0'..=b'9' => chr - b'0',
+        chr @ b'a'..=b'f' => chr - b'a' + 10,
+        chr @ b'A'..=b'F' => chr - b'A' + 10,
+        chr => return Err(ParseError::InvalidByte(chr, cursor + 1 + error_offset)),
+    };
+
+    Ok(left * 16 + right)
+}
+
 ///When this namespace is specified, the name string is a fully-qualified domain name
 pub const NAMESPACE_DNS: Uuid = Uuid::from_bytes([
      0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
@@ -346,8 +365,6 @@ impl core::str::FromStr for Uuid {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         use core::mem::MaybeUninit;
 
-        debug_assert!(input.is_ascii());
-
         if input.len() == StrBuf::capacity() {
             let mut input = input.split(SEP);
 
@@ -391,22 +408,10 @@ impl core::str::FromStr for Uuid {
             let mut cursor = 0;
             for (idx, chunks) in chunks.iter_mut().enumerate() {
                 for chunk in chunks {
-                    let left = match chunk[0] {
-                        chr @ b'0'..=b'9' => chr - b'0',
-                        chr @ b'a'..=b'f' => chr - b'a' + 10,
-                        chr @ b'A'..=b'F' => chr - b'A' + 10,
-                        chr => return Err(ParseError::InvalidByte(chr, cursor * 2 + idx)),
-                    };
-
-                    let right = match chunk[1] {
-                        chr @ b'0'..=b'9' => chr - b'0',
-                        chr @ b'a'..=b'f' => chr - b'a' + 10,
-                        chr @ b'A'..=b'F' => chr - b'A' + 10,
-                        chr => return Err(ParseError::InvalidByte(chr, (cursor * 2) + 1 + idx)),
-                    };
+                    let byte = hex_to_byte(chunk, 0, cursor * 2 + idx)?;
 
                     unsafe {
-                        ptr::write((uuid.as_mut_ptr() as *mut u8).add(cursor), left * 16 + right);
+                        ptr::write((uuid.as_mut_ptr() as *mut u8).add(cursor), byte);
                     }
 
                     cursor += 1;
@@ -415,29 +420,24 @@ impl core::str::FromStr for Uuid {
 
             Ok(Self::from_bytes(unsafe { uuid.assume_init() }))
         } else if input.len() == StrBuf::capacity() - 4 {
-            let mut uuid = MaybeUninit::<[u8; 16]>::uninit();
-
-            for (cursor, chunk) in input.as_bytes().chunks(2).enumerate() {
-                let left = match chunk[0] {
-                    chr @ b'0'..=b'9' => chr - b'0',
-                    chr @ b'a'..=b'f' => chr - b'a' + 10,
-                    chr @ b'A'..=b'F' => chr - b'A' + 10,
-                    chr => return Err(ParseError::InvalidByte(chr, cursor * 2)),
-                };
-
-                let right = match chunk[1] {
-                    chr @ b'0'..=b'9' => chr - b'0',
-                    chr @ b'a'..=b'f' => chr - b'a' + 10,
-                    chr @ b'A'..=b'F' => chr - b'A' + 10,
-                    chr => return Err(ParseError::InvalidByte(chr, (cursor * 2) + 1)),
-                };
-
-                unsafe {
-                    ptr::write((uuid.as_mut_ptr() as *mut u8).add(cursor), left * 16 + right);
-                }
-            }
-
-            Ok(Self::from_bytes(unsafe { uuid.assume_init() }))
+            Ok(Self::from_bytes([
+                hex_to_byte(input.as_bytes(), 0, 0)?,
+                hex_to_byte(input.as_bytes(), 2, 0)?,
+                hex_to_byte(input.as_bytes(), 4, 0)?,
+                hex_to_byte(input.as_bytes(), 6, 0)?,
+                hex_to_byte(input.as_bytes(), 8, 0)?,
+                hex_to_byte(input.as_bytes(), 10, 0)?,
+                hex_to_byte(input.as_bytes(), 12, 0)?,
+                hex_to_byte(input.as_bytes(), 14, 0)?,
+                hex_to_byte(input.as_bytes(), 16, 0)?,
+                hex_to_byte(input.as_bytes(), 18, 0)?,
+                hex_to_byte(input.as_bytes(), 20, 0)?,
+                hex_to_byte(input.as_bytes(), 22, 0)?,
+                hex_to_byte(input.as_bytes(), 24, 0)?,
+                hex_to_byte(input.as_bytes(), 26, 0)?,
+                hex_to_byte(input.as_bytes(), 28, 0)?,
+                hex_to_byte(input.as_bytes(), 30, 0)?,
+            ]))
         } else {
             Err(ParseError::InvalidLength(input.len()))
         }
