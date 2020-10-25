@@ -1,4 +1,10 @@
-//!Simple UUID generator
+//!Simple `no_std` UUID generator.
+//!
+//!Features:
+//!
+//!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs.
+//!- `orng` - Enables v4 using OS random, allowing unique UUIDs.
+//!- `sha1` - Enables v5.
 
 #![no_std]
 #![warn(missing_docs)]
@@ -7,6 +13,26 @@
 use core::fmt;
 
 type StrBuf = str_buf::StrBuf<[u8; 36]>;
+
+///When this namespace is specified, the name string is a fully-qualified domain name
+pub const NAMESPACE_DNS: Uuid = Uuid::from_bytes([
+     0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+]);
+
+///When this namespace is specified, the name string is a URL
+pub const NAMESPACE_URL: Uuid = Uuid::from_bytes([
+    0x6b, 0xa7, 0xb8, 0x11, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+]);
+
+///When this namespace is specified, the name string is an ISO OID
+pub const NAMESPACE_OID: Uuid = Uuid::from_bytes([
+    0x6b, 0xa7, 0xb8, 0x12, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+]);
+
+///When this namespace is specified, the name string is an X.500 DN in DER or a text output format.
+pub const NAMESPACE_X500: Uuid = Uuid::from_bytes([
+    0x6b, 0xa7, 0xb8, 0x14, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+]);
 
 #[inline(always)]
 const fn byte_to_hex(byt: u8, idx: usize) -> u8 {
@@ -44,8 +70,7 @@ impl Uuid {
     #[inline]
     ///Creates zero UUID
     pub const fn nil() -> Self {
-        const ZERO: [u8; 16] = [0;16];
-        Self::from_bytes(ZERO)
+        Self::from_bytes([0; 16])
     }
 
     #[inline]
@@ -66,12 +91,18 @@ impl Uuid {
         (self.data[6] >> 4) == version as u8
     }
 
+    #[inline]
+    ///Checks if `UUID` variant is set, it only cares about RFC4122 byte
+    pub const fn is_variant(&self) -> bool {
+        (self.data[8] & 0xc0) == 0x80
+    }
+
     #[cfg(feature = "osrng")]
     #[inline]
     ///Generates UUID `v4` using OS RNG from [getrandom](https://crates.io/crates/getrandom)
     ///
     ///Only available when `osrng` feature is enabled.
-    pub fn osrng() -> Self {
+    pub fn v4() -> Self {
         #[cold]
         fn random_unavailable(error: getrandom::Error) -> ! {
             panic!("OS RNG is not available for use: {}", error)
@@ -96,12 +127,34 @@ impl Uuid {
     ///therefore would repeat UUIDs
     ///
     ///This random is useful when you want to generate predictable but random UUIDs
-    ///Otherwise it is not different from using `osrng`
+    ///Otherwise use `v4`
     pub fn prng() -> Self {
         static RANDOM: wy::AtomicRandom = wy::AtomicRandom::new(9);
         let right = u128::from(RANDOM.gen());
         let left = u128::from(RANDOM.gen());
         Self::from_bytes(((left << 64) |  right).to_ne_bytes()).set_variant().set_version(Version::Random)
+    }
+
+    #[cfg(feature = "sha1")]
+    ///Generates UUID `v5` by using `sha1` hasher
+    ///
+    ///Only available when `sha1` feature is enabled.
+    pub fn v5(namespace: Uuid, name: &[u8]) -> Self {
+        use core::{ptr, mem};
+
+        let mut sha1 = sha1::Sha1::new();
+
+        sha1.update(&namespace.data);
+        sha1.update(name);
+
+        let sha1 = sha1.digest().bytes();
+        let mut uuid = mem::MaybeUninit::<[u8; 16]>::uninit();
+        let uuid = unsafe {
+            ptr::copy_nonoverlapping(sha1.as_ptr(), uuid.as_mut_ptr() as _, 16);
+            uuid.assume_init()
+        };
+
+        Self::from_bytes(uuid).set_variant().set_version(Version::Sha1)
     }
 
     #[inline]
