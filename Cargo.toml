@@ -26,3 +26,6 @@ sha1 = { version = "0.6", optional = true }
 prng = ["wy"]
 # Enables v4 with OS RNG
 osrng = ["getrandom"]
+
+[package.metadata.docs.rs]
+features = ["prng", "osrng", "sha1"]
