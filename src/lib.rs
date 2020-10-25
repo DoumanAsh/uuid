@@ -259,7 +259,7 @@ impl Uuid {
 
     #[inline]
     ///Creates textual representation of UUID in a static buffer.
-    pub const fn as_str(&self) -> StrBuf {
+    pub const fn to_str(&self) -> StrBuf {
         let storage = [
             byte_to_hex(self.data[0], 1),
             byte_to_hex(self.data[0], 0),
@@ -308,7 +308,7 @@ impl Uuid {
 impl fmt::Display for Uuid {
     #[inline(always)]
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str(self.as_str().as_str())
+        fmt.write_str(self.to_str().as_str())
     }
 }
 
