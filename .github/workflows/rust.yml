@@ -30,4 +30,4 @@ jobs:
         rustc --version
 
     - name: Test
-      run: cargo test --all --features prng,osrng
+      run: cargo test --features prng,osrng,sha1

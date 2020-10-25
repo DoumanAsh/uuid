@@ -51,6 +51,8 @@ fn check_random_uuid5() {
     let uuid = uuid.to_string();
     assert_eq!(uuid.len(), 36);
     assert_eq!(uuid, "2a91f5dc-61a9-5079-aa2b-f82dc6f6e524");
+    let parsed = Uuid::parse_str(uuid.as_str()).unwrap();
+    assert_eq!(parsed.to_string(), uuid);
 
     let uuid = Uuid::v5(lolid::NAMESPACE_URL, "lolka".as_bytes());
     assert!(uuid.is_version(lolid::Version::Sha1));
@@ -59,4 +61,48 @@ fn check_random_uuid5() {
     let uuid = uuid.to_string();
     assert_eq!(uuid.len(), 36);
     assert_eq!(uuid, "60ecb7b6-ba34-5aad-a9ef-9020b1ea210a");
+}
+
+#[test]
+fn check_parse_str() {
+    let parsed = Uuid::parse_str("60ecb7b6-ba34-5aad-a9ef-9020b1ea210a").unwrap();
+    assert!(parsed.is_variant());
+    assert!(parsed.is_version(lolid::Version::Sha1));
+
+    let parsed = Uuid::parse_str("60ecb7b6ba345aada9ef9020b1ea210a").unwrap();
+    assert!(parsed.is_variant());
+    assert!(parsed.is_version(lolid::Version::Sha1));
+
+    let err = Uuid::parse_str(",0ecb7b6-ba34-5aad-a9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 0));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9ef-9020b1ea210,").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 35));
+
+    let err = Uuid::parse_str(",0ecb7b6ba345aada9ef9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 0));
+
+    let err = Uuid::parse_str("60ecb7b6ba345aada9ef9020b1ea210,").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 31));
+
+    let err = Uuid::parse_str("60ecb7b6ba345aada9ef9020b1ea210ag").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidLength(33));
+
+    let err = Uuid::parse_str("60ecb7b-ba34-5aad-a9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidLength(35));
+
+    let err = Uuid::parse_str("60ecb7b6gba34g5aadga9efg9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidGroupLen(1, 8, 36));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34g5aad-a9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidGroupLen(2, 4, 9));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aadga9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidGroupLen(3, 4, 9));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9efg9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidGroupLen(4, 4, 17));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9ef-9020b1ea210a-").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidLength(37));
 }
