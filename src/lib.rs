@@ -1,17 +1,16 @@
-//!Minimal`no_std` UUID implementation.
+//!Minimal `no_std` UUID implementation.
 //!
 //!## Features:
 //!
 //!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
 //!- `orng` - Enables v4 using OS random, allowing unique UUIDs;
 //!- `sha1` - Enables v5;
-//!- `os_v1` - Enables v1 implementation using OS's API. Available platforms: Windows, Linux;
 
 #![no_std]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
-use core::{ptr, fmt};
+use core::{ptr, fmt, time};
 
 type StrBuf = str_buf::StrBuf<[u8; 36]>;
 const SEP: char = '-';
@@ -62,6 +61,52 @@ pub enum Version {
     Sha1,
 }
 
+#[derive(Clone, Debug, Copy)]
+///Timestamp for use with `v1` algorithm.
+pub struct Timestamp {
+    ticks: u64,
+    counter: u16
+}
+
+const V1_NS_TICKS: u64 = 0x01B2_1DD2_1381_4000;
+
+impl Timestamp {
+    #[inline(always)]
+    ///Creates timestamp from raw parts, as per RFC4122.
+    ///
+    ///- `ticks` is number of 100-nanoseconds intervals elapsed since 15 Oct 1582 00:00:00.00.
+    ///- `counter` is value used to differentiate between timestamps generated to avoid collision
+    ///in case of rapid generation.
+    pub const fn from_parts(ticks: u64, counter: u16) -> Self {
+        Self {
+            ticks,
+            counter,
+        }
+    }
+
+    ///Creates instance from unix timestamp, namely it takes seconds and subsec_nanos.
+    ///
+    ///Note it doesn't set counter, if needed it must be set manually
+    pub const fn from_unix(time: time::Duration) -> Self {
+        let ticks = V1_NS_TICKS + time.as_secs() * 10_000_000 + (time.subsec_nanos() as u64) / 100;
+        Self::from_parts(ticks, 0)
+    }
+
+    ///Sets counter to further avoid chance of collision between timestamps.
+    ///
+    ///Useful if clock is not guaranteed to be monotonically increasing.
+    ///Otherwise there is no benefit in setting the counter.
+    pub const fn set_counter(mut self, counter: u16) -> Self {
+        self.counter = counter;
+        self
+    }
+
+    ///Retrieves timestamp as raw parts
+    pub const fn into_parts(self) -> (u64, u16) {
+        (self.ticks, self.counter)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 ///Universally unique identifier, consisting of 128-bits, as according to RFC4122
 pub struct Uuid {
@@ -99,47 +144,33 @@ impl Uuid {
         (self.data[8] & 0xc0) == 0x80
     }
 
-    #[cfg(feature = "os_v1")]
-    ///Generates UUID using OS's API
-    pub fn os_v1() -> Self {
-        let mut uuid = core::mem::MaybeUninit::uninit();
+    ///Generates UUID from time and mac address
+    pub const fn v1(timestamp: Timestamp, mac: [u8; 6]) -> Self {
+        let time_low = (timestamp.ticks & 0xFFFF_FFFF) as u32;
+        let time_mid = ((timestamp.ticks >> 32) & 0xFFFF) as u16;
+        let time_high_and_version = (((timestamp.ticks >> 48) & 0x0FFF) as u16) | (1 << 12);
 
-        #[cfg(windows)]
-        {
-            #[link(name = "Rpcrt4")]
-            extern "system" {
-                fn UuidCreateSequential(uuid: *mut [u8; 16]) -> i32;
-            }
-
-            unsafe {
-                assert_eq!(UuidCreateSequential(uuid.as_mut_ptr()), 0)
-            }
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            #[link(name = "uuid")]
-            extern "C" {
-                fn uuid_generate_time(uuid: *mut [u8; 16]);
-            }
-
-            unsafe {
-                uuid_generate_time(uuid.as_mut_ptr());
-            }
-        }
-
-        #[cfg(all(not(windows), not(target_os = "linux")))]
-        {
-            compile_error!("os_v1 is unsupported for the target");
-        }
-
-        Self::from_bytes(unsafe {
-            uuid.assume_init()
-        }).set_variant().set_version(Version::Mac)
+        Self::from_bytes([
+            (time_low >> 24) as u8,
+            (time_low >> 16) as u8,
+            (time_low >> 8) as u8,
+            time_low as u8,
+            (time_mid >> 8) as u8,
+            time_mid as u8,
+            (time_high_and_version >> 8) as u8,
+            time_high_and_version as u8,
+            (((timestamp.counter & 0x3F00) >> 8) as u8) | 0x80,
+            (timestamp.counter & 0xFF) as u8,
+            mac[0],
+            mac[1],
+            mac[2],
+            mac[3],
+            mac[4],
+            mac[5]
+        ])
     }
 
     #[cfg(feature = "osrng")]
-    #[inline]
     ///Generates UUID `v4` using OS RNG from [getrandom](https://crates.io/crates/getrandom)
     ///
     ///Only available when `osrng` feature is enabled.

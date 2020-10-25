@@ -17,15 +17,24 @@ fn should_convert_uuid_to_str() {
     assert_eq!(uuid.to_string(), "feff6401-00ff-4ffd-a814-967d828cc863");
 }
 
-#[cfg(feature = "os_v1")]
 #[test]
-fn check_random_os_v1() {
-    let uuid = Uuid::os_v1();
-    assert!(!uuid.is_version(lolid::Version::Random));
-    assert!(uuid.is_version(lolid::Version::Mac));
+fn check_v1() {
+    const MAC: [u8; 6] = [1, 2, 3, 4, 5, 6];
 
-    let uuid2 = Uuid::os_v1();
-    assert_ne!(uuid.to_string().as_str(), uuid2.to_string().as_str());
+    let time = core::time::Duration::new(1_496_854_535, 812_946_000);
+    let uuid = Uuid::v1(lolid::Timestamp::from_unix(time), MAC);
+
+    assert!(uuid.is_version(lolid::Version::Mac));
+    assert!(!uuid.is_version(lolid::Version::Sha1));
+    assert!(uuid.is_variant());
+    assert_eq!(uuid.as_str().as_str(), "20616934-4ba2-11e7-8000-010203040506");
+
+    let uuid_next = Uuid::v1(lolid::Timestamp::from_unix(time).set_counter(1), MAC);
+    assert!(uuid_next.is_version(lolid::Version::Mac));
+    assert!(!uuid_next.is_version(lolid::Version::Sha1));
+    assert!(uuid_next.is_variant());
+    assert_ne!(uuid.as_str().as_str(), uuid_next.as_str().as_str());
+    assert_eq!(uuid_next.as_str().as_str(), "20616934-4ba2-11e7-8001-010203040506");
 }
 
 #[cfg(feature = "prng")]

@@ -26,5 +26,3 @@ sha1 = { version = "0.6", optional = true }
 prng = ["wy"]
 # Enables v4 with OS RNG
 osrng = ["getrandom"]
-# Enables generation of v1 by means of OS API
-os_v1 = []
