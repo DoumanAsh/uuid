@@ -341,6 +341,20 @@ impl fmt::Display for Uuid {
     }
 }
 
+impl Default for Uuid {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::nil()
+    }
+}
+
+impl AsRef<[u8]> for Uuid {
+    #[inline(always)]
+    fn as_ref(&self) -> &[u8] {
+        self.as_bytes()
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 ///Error happening when parsing invalid uuid.
 pub enum ParseError {
