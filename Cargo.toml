@@ -1,6 +1,6 @@
 [package]
 name = "lolid"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 license = "BSL-1.0"
@@ -8,7 +8,7 @@ repository = "https://github.com/DoumanAsh/uuid"
 readme = "README.md"
 description = "Minimal UUID implementation"
 categories = ["no-std"]
-keywords = ["uuid"]
+keywords = ["uuid", "unique"]
 include = [
     "**/*.rs",
     "Cargo.toml",
@@ -20,6 +20,7 @@ str-buf = "1.0.2"
 wy = { version = "1", optional = true }
 getrandom = { version = "0.1", optional = true }
 sha1 = { version = "0.6", optional = true }
+serde = { version = "1", default-features = false, optional = true }
 
 [features]
 # Enables v4 with pseudo RNG
@@ -27,5 +28,8 @@ prng = ["wy"]
 # Enables v4 with OS RNG
 osrng = ["getrandom"]
 
+[dev-dependencies.bincode]
+version = "1.0"
+
 [package.metadata.docs.rs]
-features = ["prng", "osrng", "sha1"]
+features = ["prng", "osrng", "sha1", "serde"]

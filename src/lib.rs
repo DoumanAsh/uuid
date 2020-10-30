@@ -5,12 +5,15 @@
 //!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
 //!- `orng` - Enables v4 using OS random, allowing unique UUIDs;
 //!- `sha1` - Enables v5;
+//!- `serde` - Enables `serde` support;
 
-#![no_std]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
 use core::{ptr, fmt, time};
+
+#[cfg(feature = "serde")]
+mod serde;
 
 type StrBuf = str_buf::StrBuf<[u8; 36]>;
 const SEP: char = '-';
@@ -126,28 +129,29 @@ impl Timestamp {
     }
 }
 
+const UUID_SIZE: usize = 16;
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 ///Universally unique identifier, consisting of 128-bits, as according to RFC4122
 pub struct Uuid {
-    data: [u8; 16]
+    data: [u8; UUID_SIZE]
 }
 
 impl Uuid {
     #[inline]
     ///Creates zero UUID
     pub const fn nil() -> Self {
-        Self::from_bytes([0; 16])
+        Self::from_bytes([0; UUID_SIZE])
     }
 
     #[inline]
     ///Creates new Uuid from raw bytes.
-    pub const fn from_bytes(data: [u8; 16]) -> Self {
+    pub const fn from_bytes(data: [u8; UUID_SIZE]) -> Self {
         Self { data }
     }
 
     #[inline]
     ///Get underlying raw bytes
-    pub const fn bytes(&self) -> [u8; 16] {
+    pub const fn bytes(&self) -> [u8; UUID_SIZE] {
         self.data
     }
 
@@ -199,7 +203,7 @@ impl Uuid {
             panic!("OS RNG is not available for use: {}", error)
         }
 
-        let mut bytes = [0; 16];
+        let mut bytes = [0; UUID_SIZE];
         if let Err(error) = getrandom::getrandom(&mut bytes[..]) {
             random_unavailable(error)
         }
@@ -239,9 +243,9 @@ impl Uuid {
         sha1.update(name);
 
         let sha1 = sha1.digest().bytes();
-        let mut uuid = mem::MaybeUninit::<[u8; 16]>::uninit();
+        let mut uuid = mem::MaybeUninit::<[u8; UUID_SIZE]>::uninit();
         let uuid = unsafe {
-            ptr::copy_nonoverlapping(sha1.as_ptr(), uuid.as_mut_ptr() as _, 16);
+            ptr::copy_nonoverlapping(sha1.as_ptr(), uuid.as_mut_ptr() as _, UUID_SIZE);
             uuid.assume_init()
         };
 
@@ -403,7 +407,7 @@ impl core::str::FromStr for Uuid {
                 node.as_bytes().chunks(2),
             ];
 
-            let mut uuid = MaybeUninit::<[u8; 16]>::uninit();
+            let mut uuid = MaybeUninit::<[u8; UUID_SIZE]>::uninit();
 
             let mut cursor = 0;
             for (idx, chunks) in chunks.iter_mut().enumerate() {
