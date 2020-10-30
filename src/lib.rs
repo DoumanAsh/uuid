@@ -150,6 +150,12 @@ impl Uuid {
     }
 
     #[inline]
+    ///Access underlying bytes as slice.
+    pub const fn as_bytes(&self) -> &[u8] {
+        &self.data
+    }
+
+    #[inline]
     ///Get underlying raw bytes
     pub const fn bytes(&self) -> [u8; UUID_SIZE] {
         self.data
