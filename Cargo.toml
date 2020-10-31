@@ -1,6 +1,6 @@
 [package]
 name = "lolid"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 license = "BSL-1.0"
@@ -18,7 +18,7 @@ include = [
 [dependencies]
 str-buf = "1.0.2"
 wy = { version = "1", optional = true }
-getrandom = { version = "0.1", optional = true }
+getrandom = { version = "0.2", default-features = false, optional = true }
 sha1 = { version = "0.6", optional = true }
 serde = { version = "1", default-features = false, optional = true }
 
