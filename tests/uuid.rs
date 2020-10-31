@@ -99,6 +99,15 @@ fn check_parse_str() {
     let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9ef-9020b1ea210,").unwrap_err();
     assert_eq!(err, lolid::ParseError::InvalidByte(b',', 35));
 
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aa,-a9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 17));
+
+    let err = Uuid::parse_str("60ecb7b6-ba3,-5aad-a9ef-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 12));
+
+    let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9e,-9020b1ea210a").unwrap_err();
+    assert_eq!(err, lolid::ParseError::InvalidByte(b',', 22));
+
     let err = Uuid::parse_str(",0ecb7b6ba345aada9ef9020b1ea210a").unwrap_err();
     assert_eq!(err, lolid::ParseError::InvalidByte(b',', 0));
 

@@ -10,13 +10,13 @@
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
-use core::{ptr, fmt, time};
+use core::{fmt, time};
 
 #[cfg(feature = "serde")]
 mod serde;
 
 type StrBuf = str_buf::StrBuf<[u8; 36]>;
-const SEP: char = '-';
+const SEP: u8 = b'-';
 
 #[inline(always)]
 const fn byte_to_hex(byt: u8, idx: usize) -> u8 {
@@ -130,6 +130,7 @@ impl Timestamp {
 }
 
 const UUID_SIZE: usize = 16;
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 ///Universally unique identifier, consisting of 128-bits, as according to RFC4122
 pub struct Uuid {
@@ -168,7 +169,7 @@ impl Uuid {
     }
 
     #[inline]
-    ///Checks if `UUID` variant is set, it only cares about RFC4122 byte
+    ///Checks if `UUID` variant is set, only cares about RFC4122 byte
     pub const fn is_variant(&self) -> bool {
         (self.data[8] & 0xc0) == 0x80
     }
@@ -204,14 +205,9 @@ impl Uuid {
     ///
     ///Only available when `osrng` feature is enabled.
     pub fn v4() -> Self {
-        #[cold]
-        fn random_unavailable(error: getrandom::Error) -> ! {
-            panic!("OS RNG is not available for use: {}", error)
-        }
-
         let mut bytes = [0; UUID_SIZE];
         if let Err(error) = getrandom::getrandom(&mut bytes[..]) {
-            random_unavailable(error)
+            panic!("OS RNG is not available for use: {}", error)
         }
 
         Self::from_bytes(bytes).set_variant().set_version(Version::Random)
@@ -241,21 +237,17 @@ impl Uuid {
     ///
     ///Only available when `sha1` feature is enabled.
     pub fn v5(namespace: Uuid, name: &[u8]) -> Self {
-        use core::{mem};
-
         let mut sha1 = sha1::Sha1::new();
 
         sha1.update(&namespace.data);
         sha1.update(name);
 
         let sha1 = sha1.digest().bytes();
-        let mut uuid = mem::MaybeUninit::<[u8; UUID_SIZE]>::uninit();
-        let uuid = unsafe {
-            ptr::copy_nonoverlapping(sha1.as_ptr(), uuid.as_mut_ptr() as _, UUID_SIZE);
-            uuid.assume_init()
-        };
 
-        Self::from_bytes(uuid).set_variant().set_version(Version::Sha1)
+        Self::from_bytes([
+            sha1[0], sha1[1], sha1[2], sha1[3], sha1[4], sha1[5], sha1[6], sha1[7],
+            sha1[8], sha1[9], sha1[10], sha1[11], sha1[12], sha1[13], sha1[14], sha1[15],
+        ]).set_variant().set_version(Version::Sha1)
     }
 
     #[inline]
@@ -278,12 +270,96 @@ impl Uuid {
         self
     }
 
+    ///Creates new instance by parsing provided bytes.
+    ///
+    ///Use this when you want to avoid performing utf-8 checks and directly feed bytes.
+    ///As long as supplied bytes contain valid ascii characters it will parse successfully.
+    ///Otherwise it shall fail with invalid character.
+    ///
+    ///Supports only simple sequence of characters and `-` separated.
+    pub fn parse_ascii_bytes(input: &[u8]) -> Result<Self, ParseError> {
+        if input.len() == StrBuf::capacity() {
+            let mut input = input.split(|byt| *byt == SEP);
+
+            //First is always present even when `-` is missing
+            //But after that we always fail if group len is invalid
+            let time_low = input.next().unwrap();
+            if time_low.len() != 8 {
+                return Err(ParseError::InvalidGroupLen(1, time_low.len()));
+            }
+
+            let time_mid = input.next().unwrap();
+            if time_mid.len() != 4 {
+                return Err(ParseError::InvalidGroupLen(2, time_mid.len()));
+            }
+
+            let time_hi_version = input.next().unwrap();
+            if time_hi_version.len() != 4 {
+                return Err(ParseError::InvalidGroupLen(3, time_hi_version.len()));
+            }
+
+            let clock_seq = input.next().unwrap();
+            if clock_seq.len() != 4 {
+                return Err(ParseError::InvalidGroupLen(4, clock_seq.len()));
+            }
+
+            let node = input.next().unwrap();
+            if node.len() != 12 {
+                return Err(ParseError::InvalidGroupLen(5, node.len()));
+            }
+
+            Ok(Self::from_bytes([
+                hex_to_byte(time_low, 0, 0)?,
+                hex_to_byte(time_low, 2, 0)?,
+                hex_to_byte(time_low, 4, 0)?,
+                hex_to_byte(time_low, 6, 0)?,
+                //+1 for `-`
+                hex_to_byte(time_mid, 0, 9)?,
+                hex_to_byte(time_mid, 2, 9)?,
+                //+1 for `-`
+                hex_to_byte(time_hi_version, 0, 14)?,
+                hex_to_byte(time_hi_version, 2, 14)?,
+                //+1 for `-`
+                hex_to_byte(clock_seq, 0, 19)?,
+                hex_to_byte(clock_seq, 2, 19)?,
+                //+1 for `-`
+                hex_to_byte(node, 0, 24)?,
+                hex_to_byte(node, 2, 24)?,
+                hex_to_byte(node, 4, 24)?,
+                hex_to_byte(node, 6, 24)?,
+                hex_to_byte(node, 8, 24)?,
+                hex_to_byte(node, 10, 24)?,
+            ]))
+        } else if input.len() == StrBuf::capacity() - 4 {
+            Ok(Self::from_bytes([
+                hex_to_byte(input, 0, 0)?,
+                hex_to_byte(input, 2, 0)?,
+                hex_to_byte(input, 4, 0)?,
+                hex_to_byte(input, 6, 0)?,
+                hex_to_byte(input, 8, 0)?,
+                hex_to_byte(input, 10, 0)?,
+                hex_to_byte(input, 12, 0)?,
+                hex_to_byte(input, 14, 0)?,
+                hex_to_byte(input, 16, 0)?,
+                hex_to_byte(input, 18, 0)?,
+                hex_to_byte(input, 20, 0)?,
+                hex_to_byte(input, 22, 0)?,
+                hex_to_byte(input, 24, 0)?,
+                hex_to_byte(input, 26, 0)?,
+                hex_to_byte(input, 28, 0)?,
+                hex_to_byte(input, 30, 0)?,
+            ]))
+        } else {
+            Err(ParseError::InvalidLength(input.len()))
+        }
+    }
+
     #[inline(always)]
     ///Creates new instance by parsing provided string.
     ///
     ///Supports only simple sequence of characters and `-` separated.
     pub fn parse_str(input: &str) -> Result<Self, ParseError> {
-        core::str::FromStr::from_str(input)
+        Self::parse_ascii_bytes(input.as_bytes())
     }
 
     #[inline]
@@ -298,22 +374,22 @@ impl Uuid {
             byte_to_hex(self.data[2], 0),
             byte_to_hex(self.data[3], 1),
             byte_to_hex(self.data[3], 0),
-            SEP as u8,
+            SEP,
             byte_to_hex(self.data[4], 1),
             byte_to_hex(self.data[4], 0),
             byte_to_hex(self.data[5], 1),
             byte_to_hex(self.data[5], 0),
-            SEP as u8,
+            SEP,
             byte_to_hex(self.data[6], 1),
             byte_to_hex(self.data[6], 0),
             byte_to_hex(self.data[7], 1),
             byte_to_hex(self.data[7], 0),
-            SEP as u8,
+            SEP,
             byte_to_hex(self.data[8], 1),
             byte_to_hex(self.data[8], 0),
             byte_to_hex(self.data[9], 1),
             byte_to_hex(self.data[9], 0),
-            SEP as u8,
+            SEP,
             byte_to_hex(self.data[10], 1),
             byte_to_hex(self.data[10], 0),
             byte_to_hex(self.data[11], 1),
@@ -355,6 +431,15 @@ impl AsRef<[u8]> for Uuid {
     }
 }
 
+impl core::str::FromStr for Uuid {
+    type Err = ParseError;
+
+    #[inline(always)]
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::parse_ascii_bytes(input.as_bytes())
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 ///Error happening when parsing invalid uuid.
 pub enum ParseError {
@@ -379,91 +464,6 @@ impl fmt::Display for ParseError {
             ParseError::InvalidLength(len) => fmt.write_fmt(format_args!("Invalid length {}", len)),
             ParseError::InvalidGroupLen(idx, len) => fmt.write_fmt(format_args!("Group {} has unexpected length {}", idx, len)),
             ParseError::InvalidByte(byte, pos) => fmt.write_fmt(format_args!("Invalid character '{:x}' at position {}", byte, pos)),
-        }
-    }
-}
-
-impl core::str::FromStr for Uuid {
-    type Err = ParseError;
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        use core::mem::MaybeUninit;
-
-        if input.len() == StrBuf::capacity() {
-            let mut input = input.split(SEP);
-
-            //First is always present even when `-` is missing
-            //But after that we always fail if group len is invalid
-            let time_low = input.next().unwrap();
-            if time_low.len() != 8 {
-                return Err(ParseError::InvalidGroupLen(1, time_low.len()));
-            }
-
-            let time_mid = input.next().unwrap();
-            if time_mid.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(2, time_mid.len()));
-            }
-
-            let time_hi_version = input.next().unwrap();
-            if time_hi_version.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(3, time_hi_version.len()));
-            }
-
-            let clock_seq = input.next().unwrap();
-            if clock_seq.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(4, clock_seq.len()));
-            }
-
-            let node = input.next().unwrap();
-            if node.len() != 12 {
-                return Err(ParseError::InvalidGroupLen(5, node.len()));
-            }
-
-            let mut chunks = [
-                time_low.as_bytes().chunks(2),
-                time_mid.as_bytes().chunks(2),
-                time_hi_version.as_bytes().chunks(2),
-                clock_seq.as_bytes().chunks(2),
-                node.as_bytes().chunks(2),
-            ];
-
-            let mut uuid = MaybeUninit::<[u8; UUID_SIZE]>::uninit();
-
-            let mut cursor = 0;
-            for (idx, chunks) in chunks.iter_mut().enumerate() {
-                for chunk in chunks {
-                    let byte = hex_to_byte(chunk, 0, cursor * 2 + idx)?;
-
-                    unsafe {
-                        ptr::write((uuid.as_mut_ptr() as *mut u8).add(cursor), byte);
-                    }
-
-                    cursor += 1;
-                }
-            }
-
-            Ok(Self::from_bytes(unsafe { uuid.assume_init() }))
-        } else if input.len() == StrBuf::capacity() - 4 {
-            Ok(Self::from_bytes([
-                hex_to_byte(input.as_bytes(), 0, 0)?,
-                hex_to_byte(input.as_bytes(), 2, 0)?,
-                hex_to_byte(input.as_bytes(), 4, 0)?,
-                hex_to_byte(input.as_bytes(), 6, 0)?,
-                hex_to_byte(input.as_bytes(), 8, 0)?,
-                hex_to_byte(input.as_bytes(), 10, 0)?,
-                hex_to_byte(input.as_bytes(), 12, 0)?,
-                hex_to_byte(input.as_bytes(), 14, 0)?,
-                hex_to_byte(input.as_bytes(), 16, 0)?,
-                hex_to_byte(input.as_bytes(), 18, 0)?,
-                hex_to_byte(input.as_bytes(), 20, 0)?,
-                hex_to_byte(input.as_bytes(), 22, 0)?,
-                hex_to_byte(input.as_bytes(), 24, 0)?,
-                hex_to_byte(input.as_bytes(), 26, 0)?,
-                hex_to_byte(input.as_bytes(), 28, 0)?,
-                hex_to_byte(input.as_bytes(), 30, 0)?,
-            ]))
-        } else {
-            Err(ParseError::InvalidLength(input.len()))
         }
     }
 }

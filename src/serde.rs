@@ -38,12 +38,7 @@ impl<'de> serde::de::Visitor<'de> for StrVisitor {
 
     #[inline]
     fn visit_bytes<E: serde::de::Error>(self, input: &[u8]) -> Result<Self::Value, E> {
-        let input = match core::str::from_utf8(input) {
-            Ok(input) => input,
-            Err(error) => return Err(serde::de::Error::custom(error)),
-        };
-
-        Self::visit_str(self, input)
+        Uuid::parse_ascii_bytes(input).map_err(|err| serde::de::Error::custom(format_args!("Not a valid uuid: {}", err)))
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "lolid"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 license = "BSL-1.0"
