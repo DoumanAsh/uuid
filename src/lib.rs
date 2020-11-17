@@ -7,6 +7,7 @@
 //!- `sha1` - Enables v5;
 //!- `serde` - Enables `serde` support;
 
+#![no_std]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
