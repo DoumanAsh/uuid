@@ -201,6 +201,16 @@ impl Uuid {
         ])
     }
 
+    #[inline]
+    ///Constructs UUID `v4` from provided bytes, assuming they are random.
+    ///
+    ///It is up to user to guarantee that it is random.
+    ///
+    ///This function only sets corresponding bits for `v4`
+    pub const fn v4_from(random: [u8; UUID_SIZE]) -> Self {
+        Self::from_bytes(random).set_variant().set_version(Version::Random)
+    }
+
     #[cfg(feature = "osrng")]
     ///Generates UUID `v4` using OS RNG from [getrandom](https://crates.io/crates/getrandom)
     ///
@@ -211,7 +221,7 @@ impl Uuid {
             panic!("OS RNG is not available for use: {}", error)
         }
 
-        Self::from_bytes(bytes).set_variant().set_version(Version::Random)
+        Self::v4_from(bytes)
     }
 
     #[cfg(feature = "prng")]
@@ -230,7 +240,7 @@ impl Uuid {
         static RANDOM: wy::AtomicRandom = wy::AtomicRandom::new(9);
         let right = u128::from(RANDOM.gen());
         let left = u128::from(RANDOM.gen());
-        Self::from_bytes(((left << 64) |  right).to_ne_bytes()).set_variant().set_version(Version::Random)
+        Self::v4_from(((left << 64) |  right).to_ne_bytes())
     }
 
     #[cfg(feature = "sha1")]
