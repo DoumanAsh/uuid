@@ -121,16 +121,16 @@ fn check_parse_str() {
     assert_eq!(err, lolid::ParseError::InvalidLength(35));
 
     let err = Uuid::parse_str("60ecb7b6gba34g5aadga9efg9020b1ea210a").unwrap_err();
-    assert_eq!(err, lolid::ParseError::InvalidGroupLen(1, 36));
+    assert_eq!(err, lolid::ParseError::InvalidGroup(1));
 
     let err = Uuid::parse_str("60ecb7b6-ba34g5aad-a9ef-9020b1ea210a").unwrap_err();
-    assert_eq!(err, lolid::ParseError::InvalidGroupLen(2, 9));
+    assert_eq!(err, lolid::ParseError::InvalidGroup(2));
 
     let err = Uuid::parse_str("60ecb7b6-ba34-5aadga9ef-9020b1ea210a").unwrap_err();
-    assert_eq!(err, lolid::ParseError::InvalidGroupLen(3, 9));
+    assert_eq!(err, lolid::ParseError::InvalidGroup(3));
 
     let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9efg9020b1ea210a").unwrap_err();
-    assert_eq!(err, lolid::ParseError::InvalidGroupLen(4, 17));
+    assert_eq!(err, lolid::ParseError::InvalidGroup(4));
 
     let err = Uuid::parse_str("60ecb7b6-ba34-5aad-a9ef-9020b1ea210a-").unwrap_err();
     assert_eq!(err, lolid::ParseError::InvalidLength(37));

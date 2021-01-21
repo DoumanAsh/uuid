@@ -29,22 +29,31 @@ const fn byte_to_hex(byt: u8, idx: usize) -> u8 {
 }
 
 #[inline]
-fn hex_to_byte(hex: &[u8], cursor: usize, error_offset: usize) -> Result<u8, ParseError> {
+const fn hex_to_byte(hex: &[u8], cursor: usize) -> Result<u8, ParseError> {
     let left = match hex[cursor] {
         chr @ b'0'..=b'9' => chr - b'0',
         chr @ b'a'..=b'f' => chr - b'a' + 10,
         chr @ b'A'..=b'F' => chr - b'A' + 10,
-        chr => return Err(ParseError::InvalidByte(chr, cursor + error_offset)),
+        chr => return Err(ParseError::InvalidByte(chr, cursor)),
     };
 
     let right = match hex[cursor + 1] {
         chr @ b'0'..=b'9' => chr - b'0',
         chr @ b'a'..=b'f' => chr - b'a' + 10,
         chr @ b'A'..=b'F' => chr - b'A' + 10,
-        chr => return Err(ParseError::InvalidByte(chr, cursor + 1 + error_offset)),
+        chr => return Err(ParseError::InvalidByte(chr, cursor + 1)),
     };
 
     Ok(left * 16 + right)
+}
+
+macro_rules! hex_to_byte_try {
+    ($bytes:expr, $cursor:expr) => {
+        match hex_to_byte($bytes, $cursor) {
+            Ok(result) => result,
+            Err(error) => return Err(error),
+        }
+    }
 }
 
 ///When this namespace is specified, the name string is a fully-qualified domain name
@@ -288,77 +297,58 @@ impl Uuid {
     ///Otherwise it shall fail with invalid character.
     ///
     ///Supports only simple sequence of characters and `-` separated.
-    pub fn parse_ascii_bytes(input: &[u8]) -> Result<Self, ParseError> {
+    pub const fn parse_ascii_bytes(input: &[u8]) -> Result<Self, ParseError> {
         if input.len() == StrBuf::capacity() {
-            let mut input = input.split(|byt| *byt == SEP);
-
-            //First is always present even when `-` is missing
-            //But after that we always fail if group len is invalid
-            let time_low = input.next().unwrap();
-            if time_low.len() != 8 {
-                return Err(ParseError::InvalidGroupLen(1, time_low.len()));
-            }
-
-            let time_mid = input.next().unwrap();
-            if time_mid.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(2, time_mid.len()));
-            }
-
-            let time_hi_version = input.next().unwrap();
-            if time_hi_version.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(3, time_hi_version.len()));
-            }
-
-            let clock_seq = input.next().unwrap();
-            if clock_seq.len() != 4 {
-                return Err(ParseError::InvalidGroupLen(4, clock_seq.len()));
-            }
-
-            let node = input.next().unwrap();
-            if node.len() != 12 {
-                return Err(ParseError::InvalidGroupLen(5, node.len()));
+            if input[8] != SEP {
+                return Err(ParseError::InvalidGroup(1));
+            } else if input[13] != SEP {
+                return Err(ParseError::InvalidGroup(2));
+            } else if input[18] != SEP {
+                return Err(ParseError::InvalidGroup(3));
+            } else if input[23] != SEP {
+                return Err(ParseError::InvalidGroup(4));
             }
 
             Ok(Self::from_bytes([
-                hex_to_byte(time_low, 0, 0)?,
-                hex_to_byte(time_low, 2, 0)?,
-                hex_to_byte(time_low, 4, 0)?,
-                hex_to_byte(time_low, 6, 0)?,
+                hex_to_byte_try!(input, 0),
+                hex_to_byte_try!(input, 2),
+                hex_to_byte_try!(input, 4),
+                hex_to_byte_try!(input, 6),
                 //+1 for `-`
-                hex_to_byte(time_mid, 0, 9)?,
-                hex_to_byte(time_mid, 2, 9)?,
+                hex_to_byte_try!(input, 8 + 1),
+                hex_to_byte_try!(input, 10 + 1),
                 //+1 for `-`
-                hex_to_byte(time_hi_version, 0, 14)?,
-                hex_to_byte(time_hi_version, 2, 14)?,
+                hex_to_byte_try!(input, 12 + 2),
+                hex_to_byte_try!(input, 14 + 2),
                 //+1 for `-`
-                hex_to_byte(clock_seq, 0, 19)?,
-                hex_to_byte(clock_seq, 2, 19)?,
+                hex_to_byte_try!(input, 16 + 3),
+                hex_to_byte_try!(input, 18 + 3),
                 //+1 for `-`
-                hex_to_byte(node, 0, 24)?,
-                hex_to_byte(node, 2, 24)?,
-                hex_to_byte(node, 4, 24)?,
-                hex_to_byte(node, 6, 24)?,
-                hex_to_byte(node, 8, 24)?,
-                hex_to_byte(node, 10, 24)?,
+                hex_to_byte_try!(input, 20 + 4),
+                hex_to_byte_try!(input, 22 + 4),
+                hex_to_byte_try!(input, 24 + 4),
+                hex_to_byte_try!(input, 26 + 4),
+                hex_to_byte_try!(input, 28 + 4),
+                hex_to_byte_try!(input, 30 + 4),
             ]))
         } else if input.len() == StrBuf::capacity() - 4 {
             Ok(Self::from_bytes([
-                hex_to_byte(input, 0, 0)?,
-                hex_to_byte(input, 2, 0)?,
-                hex_to_byte(input, 4, 0)?,
-                hex_to_byte(input, 6, 0)?,
-                hex_to_byte(input, 8, 0)?,
-                hex_to_byte(input, 10, 0)?,
-                hex_to_byte(input, 12, 0)?,
-                hex_to_byte(input, 14, 0)?,
-                hex_to_byte(input, 16, 0)?,
-                hex_to_byte(input, 18, 0)?,
-                hex_to_byte(input, 20, 0)?,
-                hex_to_byte(input, 22, 0)?,
-                hex_to_byte(input, 24, 0)?,
-                hex_to_byte(input, 26, 0)?,
-                hex_to_byte(input, 28, 0)?,
-                hex_to_byte(input, 30, 0)?,
+                hex_to_byte_try!(input, 0),
+                hex_to_byte_try!(input, 2),
+                hex_to_byte_try!(input, 4),
+                hex_to_byte_try!(input, 6),
+                hex_to_byte_try!(input, 8),
+                hex_to_byte_try!(input, 10),
+                hex_to_byte_try!(input, 12),
+                hex_to_byte_try!(input, 14),
+                hex_to_byte_try!(input, 16),
+                hex_to_byte_try!(input, 18),
+                hex_to_byte_try!(input, 20),
+                hex_to_byte_try!(input, 22),
+                hex_to_byte_try!(input, 24),
+                hex_to_byte_try!(input, 26),
+                hex_to_byte_try!(input, 28),
+                hex_to_byte_try!(input, 30),
             ]))
         } else {
             Err(ParseError::InvalidLength(input.len()))
@@ -369,7 +359,7 @@ impl Uuid {
     ///Creates new instance by parsing provided string.
     ///
     ///Supports only simple sequence of characters and `-` separated.
-    pub fn parse_str(input: &str) -> Result<Self, ParseError> {
+    pub const fn parse_str(input: &str) -> Result<Self, ParseError> {
         Self::parse_ascii_bytes(input.as_bytes())
     }
 
@@ -456,6 +446,10 @@ impl core::str::FromStr for Uuid {
 pub enum ParseError {
     ///Input has invalid length.
     InvalidLength(usize),
+    ///Groups is invalid
+    ///
+    ///1. Group number;
+    InvalidGroup(u8),
     ///Group has invalid len.
     ///
     ///1. Group number;
@@ -473,6 +467,7 @@ impl fmt::Display for ParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseError::InvalidLength(len) => fmt.write_fmt(format_args!("Invalid length {}", len)),
+            ParseError::InvalidGroup(idx) => fmt.write_fmt(format_args!("Group {} has unexpected length", idx)),
             ParseError::InvalidGroupLen(idx, len) => fmt.write_fmt(format_args!("Group {} has unexpected length {}", idx, len)),
             ParseError::InvalidByte(byte, pos) => fmt.write_fmt(format_args!("Invalid character '{:x}' at position {}", byte, pos)),
         }
