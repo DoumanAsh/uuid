@@ -2,11 +2,11 @@
 //!
 //!## Features:
 //!
-//!- `prng` - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
-//!- `orng` - Enables v4 using OS random, allowing unique UUIDs;
-//!- `sha1` - Enables v5;
+//!- `prng`  - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
+//!- `orng`  - Enables v4 using OS random, allowing unique UUIDs;
+//!- `sha1`  - Enables v5;
 //!- `serde` - Enables `serde` support;
-//!- `std` - Enables usages of `std` facilities like getting current time.
+//!- `std`   - Enables usages of `std` facilities like getting current time.
 
 #![no_std]
 #![warn(missing_docs)]
