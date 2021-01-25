@@ -27,6 +27,8 @@ serde = { version = "1", default-features = false, optional = true }
 prng = ["wy"]
 # Enables v4 with OS RNG
 osrng = ["getrandom"]
+# Enables usage of OS facilities (e.g. current time)
+std = []
 
 [dev-dependencies.bincode]
 version = "1.0"

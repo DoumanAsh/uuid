@@ -6,10 +6,14 @@
 //!- `orng` - Enables v4 using OS random, allowing unique UUIDs;
 //!- `sha1` - Enables v5;
 //!- `serde` - Enables `serde` support;
+//!- `std` - Enables usages of `std` facilities like getting current time.
 
 #![no_std]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+
+#[cfg(feature = "std")]
+extern crate std;
 
 use core::{fmt, time};
 
@@ -116,6 +120,7 @@ impl Timestamp {
         }
     }
 
+    #[inline]
     ///Creates instance from unix timestamp, namely it takes seconds and subsec_nanos.
     ///
     ///Note it doesn't set counter, if needed it must be set manually
@@ -124,6 +129,20 @@ impl Timestamp {
         Self::from_parts(ticks, 0)
     }
 
+    #[cfg(feature = "std")]
+    #[inline]
+    ///Creates instance using current time, namely calculating duration since epoch.
+    ///
+    ///Note it doesn't set counter, if needed it must be set manually
+    ///
+    ///Only available when `std` feature is enabled.
+    pub fn now() -> Self {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("System time is behind unix epoch");
+        Self::from_unix(now)
+    }
+
+    #[inline]
     ///Sets counter to further avoid chance of collision between timestamps.
     ///
     ///Useful if clock is not guaranteed to be monotonically increasing.
@@ -133,6 +152,7 @@ impl Timestamp {
         self
     }
 
+    #[inline(always)]
     ///Retrieves timestamp as raw parts
     pub const fn into_parts(self) -> (u64, u16) {
         (self.ticks, self.counter)

@@ -37,6 +37,16 @@ fn check_v1() {
     assert_eq!(uuid_next.to_str().as_str(), "20616934-4ba2-11e7-8001-010203040506");
 }
 
+#[cfg(feature = "std")]
+#[test]
+fn check_v1_std() {
+    const MAC: [u8; 6] = [1, 2, 3, 4, 5, 6];
+
+    let uuid_before = Uuid::v1(lolid::Timestamp::now(), MAC);
+    let uuid_after = Uuid::v1(lolid::Timestamp::now(), MAC);
+    assert_ne!(uuid_after, uuid_before);
+}
+
 #[cfg(feature = "prng")]
 #[test]
 fn check_random_uuid4_prng() {
