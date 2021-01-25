@@ -1,6 +1,6 @@
 [package]
 name = "lolid"
-version = "1.0.4"
+version = "1.0.5"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 license = "BSL-1.0"
@@ -19,7 +19,7 @@ include = [
 str-buf = "1.0.2"
 wy = { version = "1", optional = true }
 getrandom = { version = "0.2", default-features = false, optional = true }
-sha1 = { version = "0.6", optional = true }
+sha1 = { version = "0.6", optional = true , default-features = false }
 serde = { version = "1", default-features = false, optional = true }
 
 [features]
@@ -34,4 +34,4 @@ std = []
 version = "1.0"
 
 [package.metadata.docs.rs]
-features = ["prng", "osrng", "sha1", "serde"]
+features = ["prng", "osrng", "sha1", "serde", "std"]
