@@ -38,4 +38,4 @@ md5 = ["lhash/md5"]
 version = "1.0"
 
 [package.metadata.docs.rs]
-features = ["prng", "osrng", "sha1", "serde", "std"]
+features = ["prng", "osrng", "sha1", "serde", "std", "md5"]
