@@ -2,6 +2,7 @@
 //!
 //!## Features:
 //!
+//!- `md5`   - Enables v3;
 //!- `prng`  - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
 //!- `orng`  - Enables v4 using OS random, allowing unique UUIDs;
 //!- `sha1`  - Enables v5;
@@ -230,6 +231,24 @@ impl Uuid {
         ])
     }
 
+    #[cfg(feature = "md5")]
+    ///Generates UUID `v5` by using `md5` hasher
+    ///
+    ///Only available when `md5` feature is enabled.
+    pub fn v3(namespace: Uuid, name: &[u8]) -> Self {
+        let mut md5 = lhash::Md5::new();
+
+        md5.update(&namespace.data);
+        md5.update(name);
+
+        let hash = md5.result();
+
+        Self::from_bytes([
+            hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
+            hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15],
+        ]).set_variant().set_version(Version::Md5)
+    }
+
     #[inline]
     ///Constructs UUID `v4` from provided bytes, assuming they are random.
     ///
@@ -277,12 +296,12 @@ impl Uuid {
     ///
     ///Only available when `sha1` feature is enabled.
     pub fn v5(namespace: Uuid, name: &[u8]) -> Self {
-        let mut sha1 = sha1::Sha1::new();
+        let mut sha1 = lhash::Sha1::new();
 
         sha1.update(&namespace.data);
         sha1.update(name);
 
-        let sha1 = sha1.digest().bytes();
+        let sha1 = sha1.result();
 
         Self::from_bytes([
             sha1[0], sha1[1], sha1[2], sha1[3], sha1[4], sha1[5], sha1[6], sha1[7],

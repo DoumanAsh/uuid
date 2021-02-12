@@ -8,6 +8,7 @@ Minimal `no_std` UUID implementation.
 
 ## Features:
 
+- `md5`   - Enables v3;
 - `prng`  - Enables v4 using pseudo random, allowing unique, but predictable UUIDs;
 - `orng`  - Enables v4 using OS random, allowing unique UUIDs;
 - `sha1`  - Enables v5;

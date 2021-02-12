@@ -71,26 +71,92 @@ fn check_random_uuid4_osrng() {
     assert_ne!(uuid, Uuid::v4().to_string());
 }
 
+#[cfg(feature = "md5")]
+#[test]
+fn check_uuid3() {
+    let uuid = Uuid::v3(lolid::NAMESPACE_DNS, "example.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Md5));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "04738bdf-b25a-3829-a801-b21a1d25095b");
+
+    let uuid = Uuid::v3(lolid::NAMESPACE_DNS, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Md5));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "c6db027c-615c-3b4d-959e-1a917747ca5a");
+
+    let uuid = Uuid::v3(lolid::NAMESPACE_URL, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Md5));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "7ed45aaf-e75b-3130-8e33-ee4d9253b19f");
+
+    let uuid = Uuid::v3(lolid::NAMESPACE_OID, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Md5));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "6506a0ec-4d79-3e18-8c2b-f2b6b34f2b6d");
+
+    let uuid = Uuid::v3(lolid::NAMESPACE_X500, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Md5));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "bcee7a9c-52f1-30c6-a3cc-8c72ba634990");
+}
+
 #[cfg(feature = "sha1")]
 #[test]
-fn check_random_uuid5() {
-    let uuid = Uuid::v5(lolid::NAMESPACE_DNS, "lolka".as_bytes());
+fn check_uuid5() {
+    let uuid = Uuid::v5(lolid::NAMESPACE_DNS, "example.org".as_bytes());
     assert!(uuid.is_version(lolid::Version::Sha1));
     assert!(uuid.is_variant());
 
     let uuid = uuid.to_string();
     assert_eq!(uuid.len(), 36);
-    assert_eq!(uuid, "2a91f5dc-61a9-5079-aa2b-f82dc6f6e524");
-    let parsed = Uuid::parse_str(uuid.as_str()).unwrap();
-    assert_eq!(parsed.to_string(), uuid);
+    assert_eq!(uuid, "aad03681-8b63-5304-89e0-8ca8f49461b5");
 
-    let uuid = Uuid::v5(lolid::NAMESPACE_URL, "lolka".as_bytes());
+    let uuid = Uuid::v5(lolid::NAMESPACE_DNS, "rust-lang.org".as_bytes());
     assert!(uuid.is_version(lolid::Version::Sha1));
     assert!(uuid.is_variant());
 
     let uuid = uuid.to_string();
     assert_eq!(uuid.len(), 36);
-    assert_eq!(uuid, "60ecb7b6-ba34-5aad-a9ef-9020b1ea210a");
+    assert_eq!(uuid, "c66bbb60-d62e-5f17-a399-3a0bd237c503");
+
+    let uuid = Uuid::v5(lolid::NAMESPACE_URL, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Sha1));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "c48d927f-4122-5413-968c-598b1780e749");
+
+    let uuid = Uuid::v5(lolid::NAMESPACE_OID, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Sha1));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "8ef61ecb-977a-5844-ab0f-c25ef9b8d5d6");
+
+    let uuid = Uuid::v5(lolid::NAMESPACE_X500, "rust-lang.org".as_bytes());
+    assert!(uuid.is_version(lolid::Version::Sha1));
+    assert!(uuid.is_variant());
+
+    let uuid = uuid.to_string();
+    assert_eq!(uuid.len(), 36);
+    assert_eq!(uuid, "26c9c3e9-49b7-56da-8b9f-a0fb916a71a3");
 }
 
 #[test]
