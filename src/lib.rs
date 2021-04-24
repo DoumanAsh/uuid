@@ -16,12 +16,12 @@
 #[cfg(feature = "std")]
 extern crate std;
 
-use core::{fmt, time};
+use core::{fmt, time, mem};
 
 #[cfg(feature = "serde")]
 mod serde;
 
-type StrBuf = str_buf::StrBuf<[u8; 36]>;
+type StrBuf = str_buf::StrBuf<36>;
 const SEP: u8 = b'-';
 
 #[inline(always)]
@@ -406,42 +406,42 @@ impl Uuid {
     ///Creates textual representation of UUID in a static buffer.
     pub const fn to_str(&self) -> StrBuf {
         let storage = [
-            byte_to_hex(self.data[0], 1),
-            byte_to_hex(self.data[0], 0),
-            byte_to_hex(self.data[1], 1),
-            byte_to_hex(self.data[1], 0),
-            byte_to_hex(self.data[2], 1),
-            byte_to_hex(self.data[2], 0),
-            byte_to_hex(self.data[3], 1),
-            byte_to_hex(self.data[3], 0),
-            SEP,
-            byte_to_hex(self.data[4], 1),
-            byte_to_hex(self.data[4], 0),
-            byte_to_hex(self.data[5], 1),
-            byte_to_hex(self.data[5], 0),
-            SEP,
-            byte_to_hex(self.data[6], 1),
-            byte_to_hex(self.data[6], 0),
-            byte_to_hex(self.data[7], 1),
-            byte_to_hex(self.data[7], 0),
-            SEP,
-            byte_to_hex(self.data[8], 1),
-            byte_to_hex(self.data[8], 0),
-            byte_to_hex(self.data[9], 1),
-            byte_to_hex(self.data[9], 0),
-            SEP,
-            byte_to_hex(self.data[10], 1),
-            byte_to_hex(self.data[10], 0),
-            byte_to_hex(self.data[11], 1),
-            byte_to_hex(self.data[11], 0),
-            byte_to_hex(self.data[12], 1),
-            byte_to_hex(self.data[12], 0),
-            byte_to_hex(self.data[13], 1),
-            byte_to_hex(self.data[13], 0),
-            byte_to_hex(self.data[14], 1),
-            byte_to_hex(self.data[14], 0),
-            byte_to_hex(self.data[15], 1),
-            byte_to_hex(self.data[15], 0),
+            mem::MaybeUninit::new(byte_to_hex(self.data[0], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[0], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[1], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[1], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[2], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[2], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[3], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[3], 0)),
+            mem::MaybeUninit::new(SEP),
+            mem::MaybeUninit::new(byte_to_hex(self.data[4], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[4], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[5], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[5], 0)),
+            mem::MaybeUninit::new(SEP),
+            mem::MaybeUninit::new(byte_to_hex(self.data[6], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[6], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[7], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[7], 0)),
+            mem::MaybeUninit::new(SEP),
+            mem::MaybeUninit::new(byte_to_hex(self.data[8], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[8], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[9], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[9], 0)),
+            mem::MaybeUninit::new(SEP),
+            mem::MaybeUninit::new(byte_to_hex(self.data[10], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[10], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[11], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[11], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[12], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[12], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[13], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[13], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[14], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[14], 0)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[15], 1)),
+            mem::MaybeUninit::new(byte_to_hex(self.data[15], 0)),
         ];
 
         unsafe {
