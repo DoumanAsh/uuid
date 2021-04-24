@@ -235,13 +235,10 @@ impl Uuid {
     ///Generates UUID `v5` by using `md5` hasher
     ///
     ///Only available when `md5` feature is enabled.
-    pub fn v3(namespace: Uuid, name: &[u8]) -> Self {
-        let mut md5 = lhash::Md5::new();
-
-        md5.update(&namespace.data);
-        md5.update(name);
-
-        let hash = md5.result();
+    pub const fn v3(namespace: Uuid, name: &[u8]) -> Self {
+        let hash = lhash::Md5::new().const_update(&namespace.data)
+                                    .const_update(name)
+                                    .const_result();
 
         Self::from_bytes([
             hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
@@ -295,13 +292,10 @@ impl Uuid {
     ///Generates UUID `v5` by using `sha1` hasher
     ///
     ///Only available when `sha1` feature is enabled.
-    pub fn v5(namespace: Uuid, name: &[u8]) -> Self {
-        let mut sha1 = lhash::Sha1::new();
-
-        sha1.update(&namespace.data);
-        sha1.update(name);
-
-        let sha1 = sha1.result();
+    pub const fn v5(namespace: Uuid, name: &[u8]) -> Self {
+        let sha1 = lhash::Sha1::new().const_update(&namespace.data)
+                                     .const_update(name)
+                                     .const_result();
 
         Self::from_bytes([
             sha1[0], sha1[1], sha1[2], sha1[3], sha1[4], sha1[5], sha1[6], sha1[7],
