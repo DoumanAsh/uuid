@@ -182,6 +182,24 @@ impl Uuid {
     }
 
     #[inline]
+    ///Creates new Uuid from byte slice, if its size is 16, otherwise `None`
+    pub const fn from_slice(data: &[u8]) -> Option<Uuid> {
+        #[cold]
+        const fn fail() -> Option<Uuid> {
+            None
+        }
+
+        if data.len() != UUID_SIZE {
+            return fail();
+        }
+
+        Some(Self::from_bytes([
+            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+            data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15],
+        ]))
+    }
+
+    #[inline]
     ///Creates `UUID` from `GUID` converting integer fields to big endian while `d4` is copied as
     ///it is.
     ///
