@@ -163,6 +163,7 @@ impl Timestamp {
 const UUID_SIZE: usize = 16;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[repr(transparent)]
 ///Universally unique identifier, consisting of 128-bits, as according to RFC4122
 pub struct Uuid {
     data: [u8; UUID_SIZE]
