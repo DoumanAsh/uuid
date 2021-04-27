@@ -194,6 +194,46 @@ impl Uuid {
     }
 
     #[inline]
+    ///Returns `time_low` part of uuid.
+    ///
+    ///Refer to https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+    pub const fn time_low(&self) -> u32 {
+        u32::from_ne_bytes([self.data[0], self.data[1], self.data[2], self.data[3]])
+    }
+
+    #[inline]
+    ///Returns `time_mid` part of uuid.
+    ///
+    ///Refer to https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+    pub const fn time_mid(&self) -> u16 {
+        u16::from_ne_bytes([self.data[4], self.data[5]])
+    }
+
+    #[inline]
+    ///Returns `time_high_and_version` part of uuid.
+    ///
+    ///Refer to https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+    pub const fn time_high_and_version(&self) -> u16 {
+        u16::from_ne_bytes([self.data[6], self.data[7]])
+    }
+
+    #[inline]
+    ///Returns `clock_sequence` part of uuid.
+    ///
+    ///Refer to https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+    pub const fn clock_sequence(&self) -> u16 {
+        u16::from_ne_bytes([self.data[8], self.data[9]])
+    }
+
+    #[inline]
+    ///Returns `node` part of uuid.
+    ///
+    ///Refer to https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+    pub const fn node(&self) -> [u8; 6] {
+        [self.data[10], self.data[11], self.data[12], self.data[13], self.data[14], self.data[15]]
+    }
+
+    #[inline]
     ///Checks if `UUID` version is equal to the provided `version`
     pub const fn is_version(&self, version: Version) -> bool {
         (self.data[6] >> 4) == version as u8
