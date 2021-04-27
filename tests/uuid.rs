@@ -1,6 +1,14 @@
 use lolid::Uuid;
 
 #[test]
+fn should_convert_from_guid() {
+    let uuid = Uuid::from_guid(0x4a35229d, 0x5527, 0x4f30, [0x86, 0x47, 0x9d, 0xc5, 0x4e, 0x1e, 0xe1, 0xe8]);
+    assert!(uuid.is_version(lolid::Version::Random));
+    assert!(uuid.is_variant());
+    assert_eq!(uuid.to_str(), "4a35229d-5527-4f30-8647-9dc54e1ee1e8");
+}
+
+#[test]
 fn should_convert_uuid_to_str() {
     let uuid = Uuid::nil().to_string();
     assert_eq!(uuid.len(), 36);

@@ -182,6 +182,33 @@ impl Uuid {
     }
 
     #[inline]
+    ///Creates `UUID` from `GUID` converting integer fields to big endian while `d4` is copied as
+    ///it is.
+    ///
+    ///Note that it is assumed that `GUID` was correctly created in little endian format (e.g.
+    ///using winapi `CoCreateGuid` which internally uses `UuidCreate` which in turn relies on
+    ///secure random)
+    ///Effectively winapi `GUID` would result in creation of `UUID` of `Random` variant.
+    pub const fn from_guid(d1: u32, d2: u16, d3: u16, d4: [u8; 8]) -> Self {
+        let d1 = d1.to_be_bytes();
+        let d2 = d2.to_be_bytes();
+        let d3 = d3.to_be_bytes();
+        Self::from_bytes([
+            d1[0], d1[1], d1[2], d1[3],
+            d2[0], d2[1],
+            d3[0], d3[1],
+            d4[0],
+            d4[1],
+            d4[2],
+            d4[3],
+            d4[4],
+            d4[5],
+            d4[6],
+            d4[7],
+        ])
+    }
+
+    #[inline]
     ///Access underlying bytes as slice.
     pub const fn as_bytes(&self) -> &[u8] {
         &self.data
