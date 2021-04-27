@@ -318,7 +318,7 @@ impl Uuid {
     }
 
     #[cfg(feature = "md5")]
-    ///Generates UUID `v5` by using `md5` hasher
+    ///Generates UUID `v3` by using `md5` hasher
     ///
     ///Only available when `md5` feature is enabled.
     pub const fn v3(namespace: Uuid, name: &[u8]) -> Self {
@@ -548,6 +548,13 @@ impl AsRef<[u8]> for Uuid {
     #[inline(always)]
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
+    }
+}
+
+impl From<[u8; UUID_SIZE]> for Uuid {
+    #[inline(always)]
+    fn from(bytes: [u8; UUID_SIZE]) -> Self {
+        Self::from_bytes(bytes)
     }
 }
 
